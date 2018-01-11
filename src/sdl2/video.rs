@@ -900,6 +900,40 @@ impl WindowBuilder {
         }
     }
 
+    /// Return raw window pointer.
+    pub unsafe fn build_raw(&self) -> Result<*mut sys::SDL_Window, WindowBuildError> {
+        use self::WindowBuildError::*;
+        let title = match CString::new(self.title.clone()) {
+            Ok(t) => t,
+            Err(err) => return Err(InvalidTitle(err)),
+        };
+        if self.width >= (1 << 31) {
+            return Err(WidthOverflows(self.width));
+        }
+        if self.height >= (1 << 31) {
+            return Err(HeightOverflows(self.width));
+        }
+
+        let raw_width = self.width as c_int;
+        let raw_height = self.height as c_int;
+        //unsafe {
+            let raw = sys::SDL_CreateWindow(
+                title.as_ptr() as *const c_char,
+                to_ll_windowpos(self.x),
+                to_ll_windowpos(self.y),
+                raw_width,
+                raw_height,
+                self.window_flags
+            );
+
+            if raw.is_null() {
+                Err(SdlError(get_error()))
+            } else {
+                Ok(raw)
+            }
+        //}
+    }
+
     /// Gets the underlying window flags.
     pub fn window_flags(&self) -> u32 { self.window_flags }
 
