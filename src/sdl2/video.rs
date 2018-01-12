@@ -900,8 +900,9 @@ impl WindowBuilder {
         }
     }
 
-    /// Return raw window pointer.
-    pub unsafe fn build_raw(&self) -> Result<*mut sys::SDL_Window, WindowBuildError> {
+    /// Return raw window pointer. Also returns the video subsystem so it is not "lost"
+    /// in case this was the last reference.
+    pub unsafe fn build_hack(&self) -> Result<(*mut sys::SDL_Window , VideoSubsystem), WindowBuildError> {
         use self::WindowBuildError::*;
         let title = match CString::new(self.title.clone()) {
             Ok(t) => t,
@@ -929,7 +930,7 @@ impl WindowBuilder {
             if raw.is_null() {
                 Err(SdlError(get_error()))
             } else {
-                Ok(raw)
+                Ok((raw, self.subsystem.clone()))
             }
         //}
     }
